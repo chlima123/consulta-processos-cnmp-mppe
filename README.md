@@ -1,57 +1,108 @@
-# Consulta Processos CNMP — MPPE
+# consultas-cnmp
 
-Script Python que acessa o sistema [ELO do CNMP](https://elo.cnmp.mp.br/pages/consulta.seam), busca processos do **Ministério Público do Estado de Pernambuco** e salva os números em um arquivo `.txt`.
+Ferramenta Python para consulta automática de processos no sistema **ELO do CNMP** (Conselho Nacional do Ministério Público).
 
-## O que faz
+## Funcionalidades
 
-- Acessa automaticamente o portal público de processos do CNMP
-- Preenche o campo "Nome da parte" com `Ministério Público do Estado de Pernambuco`
-- Percorre todas as páginas de resultado (paginação automática)
-- Extrai os números de processo no formato `1.00000/AAAA-DD`
-- Gera um arquivo `.txt` com um número por linha e timestamp no nome
+- Busca por **nome da parte** ou **número do processo**
+- Filtro por processos **arquivados**
+- Exportação em **TXT, CSV, JSON e Excel**
+- Paginação automática (coleta todos os resultados)
+- Execução agendada via **GitHub Actions** (toda segunda-feira)
+- Suporte a **Browserbase** para execução em nuvem (CI/CD)
 
-## Pré-requisitos
-
-- Python 3.9+
-- Playwright instalado no ambiente
+## Instalação
 
 ```bash
-pip install playwright
+pip install -e .
 python -m playwright install chromium
 ```
 
-## Como usar
+Com suporte a Browserbase (para CI):
 
 ```bash
-python3 consulta_cnmp.py
+pip install -e ".[browserbase]"
 ```
 
-O script abre um navegador Chromium (visível), realiza a busca e salva o resultado na mesma pasta com o nome:
+## Uso
 
-```
-processos_mppe_YYYYMMDD_HHMMSS.txt
-```
+### Busca padrão (MPPE)
 
-## Exemplo de saída
-
-```
-1.00230/2015-90
-1.00322/2018-68
-1.00271/2021-42
-1.01141/2018-59
-...
+```bash
+consultas-cnmp
 ```
 
-## Observações técnicas
+### Opções disponíveis
 
-- O site bloqueia navegadores headless — o script usa `headless=False` com anti-detecção (`--disable-blink-features=AutomationControlled`)
-- O padrão regex usado para capturar números é `\d+\.\d+/\d{4}-\d{2}`
-- Arquivos de debug (screenshots) são gerados automaticamente em caso de erro
+```
+consultas-cnmp [OPÇÕES]
+
+  -t, --termo TEXTO      Nome da parte (padrão: "Ministério Público do Estado de Pernambuco")
+  -n, --numero NUMERO    Número do processo (ex: 1.00230/2015-90)
+  -a, --arquivado        Buscar apenas processos arquivados
+  -f, --formato FMT...   Formatos de saída: txt csv json excel (padrão: txt)
+  -o, --saida DIR        Diretório de saída (padrão: resultados/)
+      --browserbase      Usar Browserbase em vez do Chromium local
+```
+
+### Exemplos
+
+```bash
+# Busca padrão — exporta TXT
+consultas-cnmp
+
+# Exportar em todos os formatos
+consultas-cnmp --formato txt csv json excel
+
+# Buscar por número de processo
+consultas-cnmp --numero 1.00230/2015-90 --formato json
+
+# Buscar outro MP, apenas arquivados, salvar em pasta específica
+consultas-cnmp --termo "Ministério Público do Estado da Bahia" \
+               --arquivado \
+               --formato csv excel \
+               --saida /tmp/resultados
+```
 
 ## Estrutura
 
 ```
-cnmp/
-├── consulta_cnmp.py   # script principal
+consultas_cnmp/
+├── src/
+│   └── consultas_cnmp/
+│       ├── __init__.py
+│       ├── browser.py      # contexto Playwright (local ou Browserbase)
+│       ├── scraper.py      # extração e paginação
+│       ├── exporters.py    # TXT, CSV, JSON, Excel
+│       └── cli.py          # entrada de linha de comando
+├── resultados/             # saída gerada (ignorada pelo git)
+├── .github/
+│   └── workflows/
+│       └── consulta_agendada.yml   # execução automática semanal
+├── consulta_cnmp.py        # script legado (mantido por compatibilidade)
+├── pyproject.toml
 └── README.md
 ```
+
+## GitHub Actions
+
+O workflow `consulta_agendada.yml` executa toda **segunda-feira às 03h (Brasília)** e faz commit dos resultados no repositório.
+
+### Configurar secrets
+
+No repositório GitHub, acesse **Settings → Secrets → Actions** e adicione:
+
+| Secret | Valor |
+|---|---|
+| `BROWSERBASE_API_KEY` | sua chave do Browserbase |
+| `BROWSERBASE_PROJECT_ID` | seu project ID do Browserbase |
+
+### Execução manual
+
+Na aba **Actions** do repositório, selecione **Consulta CNMP Agendada** → **Run workflow**.
+
+## Observações técnicas
+
+- O site bloqueia Chromium headless padrão — o modo local usa `headless=False` com anti-detecção
+- Para CI/CD, use `--browserbase` (suporta headless com stealth nativo)
+- O padrão regex dos números: `\d+\.\d+/\d{4}-\d{2}` (ex: `1.00230/2015-90`)

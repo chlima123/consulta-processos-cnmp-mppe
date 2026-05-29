@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+
+# Resultados gerados (manter apenas .gitkeep)
+resultados/*.txt
+resultados/*.csv
+resultados/*.json
+resultados/*.xlsx
+
+# Arquivos de debug
+debug_*.png
+debug_*.html
+debug_*.txt
+
+# Arquivos de saída avulsos
+processos_mppe_*.txt
+processos_MPPE_*.txt

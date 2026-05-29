@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "consultas-cnmp"
+version = "0.2.0"
+description = "Consulta automática de processos no sistema ELO do CNMP"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "playwright>=1.40",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+browserbase = ["browserbase>=0.4"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+consultas-cnmp = "consultas_cnmp.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
